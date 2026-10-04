@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '/api_service.dart';
 import 'teacher_dashboard_page.dart';
+import 'parent/dashboard.dart';
 
 // Import your other role dashboards here when ready:
 // import 'student_dashboard_page.dart';
@@ -28,6 +29,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showSnackBar(String message, Color backgroundColor, {int seconds = 5}) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -57,75 +59,154 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
+      final identifier = _identifierController.text.trim();
+      final password = _passwordController.text;
+
+      debugPrint('');
+      debugPrint('========================================');
+      debugPrint('============= FLUTTER LOGIN ============');
+      debugPrint('========================================');
+      debugPrint('Identifier: $identifier');
+      debugPrint('Sending request...');
+      debugPrint('URL: http://10.200.0.123/BKHS/api/auth/login.php');
+
       final response = await http.post(
         Uri.parse('http://10.200.0.123/BKHS/api/auth/login.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'identifier': _identifierController.text.trim(),
-          'password': _passwordController.text,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'identifier': identifier, 'password': password}),
       );
 
-      final data = jsonDecode(response.body);
+      debugPrint('HTTP STATUS: ${response.statusCode}');
+      debugPrint('API RESPONSE: ${response.body}');
+      debugPrint('========================================');
 
       if (!mounted) return;
 
+      Map<String, dynamic> data;
+
+      try {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is! Map<String, dynamic>) {
+          throw Exception('Invalid JSON structure');
+        }
+
+        data = decoded;
+      } catch (e) {
+        debugPrint('JSON DECODE ERROR: $e');
+
+        _showSnackBar(
+          'The server returned an invalid response.',
+          const Color(0xFFEF4444),
+          seconds: 8,
+        );
+
+        return;
+      }
+
+      debugPrint('SUCCESS: ${data['success']}');
+      debugPrint('MESSAGE: ${data['message']}');
+
       if (data['success'] == true) {
-        final role = data['user']['role']?.toString().toLowerCase();
-        final token = data['token']?.toString();
+        final user = data['user'];
 
-        if (token != null && token.isNotEmpty) {
-          ApiService.setToken(token);
+        if (user is! Map<String, dynamic>) {
+          debugPrint('USER DATA: Missing or invalid');
 
-          // Role-based Navigation Routing
-          switch (role) {
-            case 'teacher':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TeacherDashboardPage(),
-                ),
-              );
-              break;
+          _showSnackBar(
+            'Login succeeded, but user information is missing.',
+            const Color(0xFFEF4444),
+            seconds: 8,
+          );
 
-            case 'student':
-              // TODO: Replace with your actual StudentDashboardPage widget
-              _showSnackBar(
-                'Student portal is coming soon!',
-                const Color(0xFF3B82F6),
-              );
-              break;
+          return;
+        }
 
-            case 'admin':
-              // TODO: Replace with your actual AdminDashboardPage widget
-              _showSnackBar(
-                'Admin portal is coming soon!',
-                const Color(0xFF3B82F6),
-              );
-              break;
+        final role = user['role']?.toString().trim().toLowerCase();
+        final token = data['token']?.toString().trim();
 
-            default:
-              _showSnackBar(
-                'Unrecognized account role: ${role ?? 'Unknown'}',
-                const Color(0xFFEF4444),
-              );
-              break;
-          }
-        } else {
+        debugPrint('USER ID: ${user['id']}');
+        debugPrint('FULL NAME: ${user['full_name']}');
+        debugPrint('ROLE: $role');
+        debugPrint('TOKEN EXISTS: ${token != null && token.isNotEmpty}');
+        debugPrint('========================================');
+
+        if (token == null || token.isEmpty) {
           _showSnackBar(
             'Login succeeded, but no authentication token was received.',
             const Color(0xFFF59E0B),
+            seconds: 8,
           );
+
+          return;
+        }
+
+        ApiService.setToken(token);
+
+        switch (role) {
+          case 'teacher':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TeacherDashboardPage(),
+              ),
+            );
+            break;
+
+          case 'parent':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ParentDashboardPage(token: token),
+              ),
+            );
+            break;
+
+          case 'student':
+            _showSnackBar(
+              'Student portal is coming soon!',
+              const Color(0xFF3B82F6),
+            );
+            break;
+
+          case 'admin':
+            _showSnackBar(
+              'Admin portal is coming soon!',
+              const Color(0xFF3B82F6),
+            );
+            break;
+
+          default:
+            debugPrint('UNRECOGNIZED ROLE: $role');
+
+            _showSnackBar(
+              'Unrecognized account role: ${role ?? 'Unknown'}',
+              const Color(0xFFEF4444),
+              seconds: 8,
+            );
+            break;
         }
       } else {
-        _showSnackBar(
-          data['message']?.toString() ?? 'Invalid credentials.',
-          const Color(0xFFEF4444),
-        );
+        final message = data['message']?.toString() ?? 'Invalid credentials.';
+
+        debugPrint('LOGIN FAILED: $message');
+
+        _showSnackBar(message, const Color(0xFFEF4444), seconds: 8);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('============= FLUTTER ERROR =============');
+      debugPrint('ERROR: $e');
+      debugPrint('STACK TRACE: $stackTrace');
+      debugPrint('=========================================');
+
+      if (!mounted) return;
+
       _showSnackBar(
-        'Connection error. Please try again later.',
+        'Connection error: $e',
         const Color(0xFFEF4444),
         seconds: 8,
       );
@@ -147,15 +228,11 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Non-blue accent so the page doesn't read as "all blue" next to the
-    // app's indigo header. Warm teal for actions, amber for the icon badge.
-    const accentColor = Color(0xFF0D9488); // teal
+    const accentColor = Color(0xFF0D9488);
     const accentHoverColor = Color(0xFF0F766E);
     const cardColor = Colors.white;
 
     return Scaffold(
-      // Neutral, non-blue background — the colored header now lives only
-      // in the app's shared top bar, so this page doesn't need its own.
       backgroundColor: const Color(0xFFF5F6F8),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -187,10 +264,7 @@ class _LoginPageState extends State<LoginPage> {
                       color: Color(0xFF64748B),
                     ),
                   ),
-
                   const SizedBox(height: 28),
-
-                  // ---- Card ----
                   Container(
                     decoration: BoxDecoration(
                       color: cardColor,
@@ -215,7 +289,6 @@ class _LoginPageState extends State<LoginPage> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Username / Phone Field Label
                             const Text(
                               'Username or Phone',
                               style: TextStyle(
@@ -288,12 +361,11 @@ class _LoginPageState extends State<LoginPage> {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Please enter your username or phone number';
                                 }
+
                                 return null;
                               },
                             ),
                             const SizedBox(height: 20),
-
-                            // Password Field Label
                             const Text(
                               'Password',
                               style: TextStyle(
@@ -381,21 +453,19 @@ class _LoginPageState extends State<LoginPage> {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your password';
                                 }
+
                                 if (value.length < 6) {
                                   return 'Password must be at least 6 characters';
                                 }
+
                                 return null;
                               },
                             ),
                             const SizedBox(height: 10),
-
-                            // Forgot Password Link
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
-                                onPressed: () {
-                                  // Handle forgot password action
-                                },
+                                onPressed: () {},
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   minimumSize: Size.zero,
@@ -413,8 +483,6 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             const SizedBox(height: 28),
-
-                            // Login Button
                             SizedBox(
                               height: 52,
                               child: ElevatedButton(
@@ -429,11 +497,13 @@ class _LoginPageState extends State<LoginPage> {
                                         )) {
                                           return accentColor.withOpacity(0.5);
                                         }
+
                                         if (states.contains(
                                           WidgetState.hovered,
                                         )) {
                                           return accentHoverColor;
                                         }
+
                                         return accentColor;
                                       }),
                                   foregroundColor: WidgetStateProperty.all(
@@ -448,6 +518,7 @@ class _LoginPageState extends State<LoginPage> {
                                         )) {
                                           return 0;
                                         }
+
                                         return 2;
                                       }),
                                   shadowColor: WidgetStateProperty.all(
@@ -486,9 +557,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
                   Text(
                     '© ${DateTime.now().year} School Portal · All rights reserved',
                     textAlign: TextAlign.center,
