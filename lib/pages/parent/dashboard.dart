@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '/api_service.dart';
 import '/parent_apiservice.dart';
+import '/pages/parent/child_details.dart';
+import '/pages/parent/parent_profile_page.dart';
 
 class ParentDashboardPage extends StatefulWidget {
   final String token;
@@ -28,7 +30,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
   void initState() {
     super.initState();
 
-    _apiService = ParentApiService(baseUrl: 'http://10.200.0.123/BKHS/api');
+    _apiService = ParentApiService(baseUrl: 'http://localhost/BKHS/api');
 
     _loadDashboard();
   }
@@ -103,9 +105,23 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
   }
 
   String _getParentPhoto() {
-    final photo = _parent?['photo_url']?.toString().trim();
+    final photoUrl = _parent?['photo_url']?.toString().trim();
 
-    return photo ?? '';
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      return photoUrl;
+    }
+
+    final photo = _parent?['photo']?.toString().trim();
+
+    if (photo != null && photo.isNotEmpty) {
+      if (photo.startsWith('http://') || photo.startsWith('https://')) {
+        return photo;
+      }
+
+      return 'http://localhost/BKHS/${photo.replaceFirst(RegExp(r'^/+'), '')}';
+    }
+
+    return '';
   }
 
   Future<void> _logout() async {
@@ -280,7 +296,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
         );
 
       case 4:
-        return _buildProfilePage();
+        return ParentProfilePage(token: widget.token);
 
       default:
         return _buildDashboard();
@@ -444,8 +460,8 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                 width: 52,
                 height: 52,
 
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEFF6FF),
                   shape: BoxShape.circle,
                 ),
 
@@ -625,11 +641,15 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
     final studentId = int.tryParse(child['student_id']?.toString() ?? '') ?? 0;
 
     if (studentId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid student information.')),
+      );
+
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Selected ${child['full_name'] ?? 'child'}')),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ChildDetailsPage(studentId: studentId)),
     );
   }
 
@@ -651,8 +671,8 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
             width: 58,
             height: 58,
 
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF3F4F6),
               shape: BoxShape.circle,
             ),
 
@@ -772,12 +792,32 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
     final photoUrl = _getParentPhoto();
 
     if (photoUrl.isNotEmpty) {
-      return CircleAvatar(
-        radius: 19,
+      return ClipOval(
+        child: Container(
+          width: 38,
+          height: 38,
 
-        backgroundColor: const Color(0xFFEFF6FF),
+          color: const Color(0xFFEFF6FF),
 
-        backgroundImage: NetworkImage(photoUrl),
+          child: Image.network(
+            photoUrl,
+
+            width: 38,
+            height: 38,
+
+            fit: BoxFit.cover,
+
+            webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(
+                Icons.person_outline_rounded,
+                color: Color(0xFF2563EB),
+                size: 21,
+              );
+            },
+          ),
+        ),
       );
     }
 
@@ -790,194 +830,6 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
         Icons.person_outline_rounded,
         color: Color(0xFF2563EB),
         size: 21,
-      ),
-    );
-  }
-
-  Widget _buildProfilePage() {
-    final name = _getParentName();
-
-    final phone = _parent?['phone']?.toString().trim() ?? '';
-
-    final email = _parent?['email']?.toString().trim() ?? '';
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
-
-      children: [
-        Center(child: _buildLargeProfileAvatar()),
-
-        const SizedBox(height: 14),
-
-        Center(
-          child: Text(
-            name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF111827),
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 5),
-
-        const Center(
-          child: Text(
-            'Parent',
-            style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
-          ),
-        ),
-
-        const SizedBox(height: 28),
-
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-
-          child: Column(
-            children: [
-              _buildProfileDetail(
-                'Full Name',
-                name,
-                Icons.person_outline_rounded,
-              ),
-
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-
-              _buildProfileDetail(
-                'Phone',
-                phone.isNotEmpty ? phone : 'Not provided',
-                Icons.phone_outlined,
-              ),
-
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-
-              _buildProfileDetail(
-                'Email',
-                email.isNotEmpty ? email : 'Not provided',
-                Icons.email_outlined,
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Profile editing will be added from the web profile page.',
-                  ),
-                ),
-              );
-            },
-
-            icon: const Icon(Icons.edit_outlined),
-
-            label: const Text('Edit Profile'),
-
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF2563EB),
-
-              side: const BorderSide(color: Color(0xFF2563EB)),
-
-              padding: const EdgeInsets.symmetric(vertical: 13),
-
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLargeProfileAvatar() {
-    final photoUrl = _getParentPhoto();
-
-    if (photoUrl.isNotEmpty) {
-      return CircleAvatar(
-        radius: 48,
-
-        backgroundColor: const Color(0xFFEFF6FF),
-
-        backgroundImage: NetworkImage(photoUrl),
-      );
-    }
-
-    return const CircleAvatar(
-      radius: 48,
-
-      backgroundColor: Color(0xFFEFF6FF),
-
-      child: Icon(
-        Icons.person_outline_rounded,
-        color: Color(0xFF2563EB),
-        size: 48,
-      ),
-    );
-  }
-
-  Widget _buildProfileDetail(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-
-            child: Icon(icon, color: const Color(0xFF2563EB), size: 21),
-          ),
-
-          const SizedBox(width: 13),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  value,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF374151),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

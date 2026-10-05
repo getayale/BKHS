@@ -68,10 +68,10 @@ class _LoginPageState extends State<LoginPage> {
       debugPrint('========================================');
       debugPrint('Identifier: $identifier');
       debugPrint('Sending request...');
-      debugPrint('URL: http://10.200.0.123/BKHS/api/auth/login.php');
+      debugPrint('URL: http://localhost/BKHS/api/auth/login.php');
 
       final response = await http.post(
-        Uri.parse('http://10.200.0.123/BKHS/api/auth/login.php'),
+        Uri.parse('http://localhost/BKHS/api/auth/login.php'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

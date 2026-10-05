@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://10.200.0.123/BKHS/api';
+  static const String baseUrl = 'http://localhost/BKHS/api';
 
   static String? token;
 
