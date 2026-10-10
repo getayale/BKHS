@@ -173,15 +173,9 @@ class ApiService {
 
     final response = await http.Response.fromStream(streamedResponse);
 
-    debugPrint(
-      'PROFILE PHOTO STATUS: '
-      '${response.statusCode}',
-    );
+    debugPrint('PROFILE PHOTO STATUS: ${response.statusCode}');
 
-    debugPrint(
-      'PROFILE PHOTO RESPONSE: '
-      '${response.body}',
-    );
+    debugPrint('PROFILE PHOTO RESPONSE: ${response.body}');
 
     debugPrint('========================================');
 
@@ -413,15 +407,9 @@ class ApiService {
 
     final response = await http.get(uri, headers: authHeaders);
 
-    debugPrint(
-      'ATTENDANCE HISTORY STATUS: '
-      '${response.statusCode}',
-    );
+    debugPrint('ATTENDANCE HISTORY STATUS: ${response.statusCode}');
 
-    debugPrint(
-      'ATTENDANCE HISTORY RESPONSE: '
-      '${response.body}',
-    );
+    debugPrint('ATTENDANCE HISTORY RESPONSE: ${response.body}');
 
     debugPrint('========================================');
 
@@ -560,21 +548,9 @@ class ApiService {
 
     final response = await http.get(uri, headers: authOnlyHeaders);
 
-    debugPrint(
-      'EXPORT STATUS: '
-      '${response.statusCode}',
-    );
-
-    debugPrint(
-      'EXPORT CONTENT TYPE: '
-      '${response.headers['content-type']}',
-    );
-
-    debugPrint(
-      'EXPORT FILE SIZE: '
-      '${response.bodyBytes.length} bytes',
-    );
-
+    debugPrint('EXPORT STATUS: ${response.statusCode}');
+    debugPrint('EXPORT CONTENT TYPE: ${response.headers['content-type']}');
+    debugPrint('EXPORT FILE SIZE: ${response.bodyBytes.length} bytes');
     debugPrint('========================================');
 
     if (response.statusCode != 200) {
@@ -716,7 +692,7 @@ class ApiService {
     }
 
     final response = await http.post(
-      Uri.parse('$baseUrl/teacher_result.php'),
+      Uri.parse('$baseUrl/teacher/teacher_result.php'),
       headers: authHeaders,
       body: jsonEncode({
         'semester_id': semesterId,
@@ -792,31 +768,17 @@ class ApiService {
     final response = await http.get(uri, headers: authHeaders);
 
     debugPrint('HOMEWORK URL: $uri');
-
-    debugPrint(
-      'HOMEWORK STATUS: '
-      '${response.statusCode}',
-    );
-
-    debugPrint(
-      'HOMEWORK BODY: '
-      '${response.body}',
-    );
+    debugPrint('HOMEWORK STATUS: ${response.statusCode}');
+    debugPrint('HOMEWORK BODY: ${response.body}');
 
     if (response.statusCode != 200) {
-      throw Exception(
-        'HTTP ${response.statusCode}: '
-        '${response.body}',
-      );
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
     }
 
     final decoded = jsonDecode(response.body);
 
     if (decoded is! Map<String, dynamic>) {
-      throw Exception(
-        'Invalid JSON response: '
-        '${response.body}',
-      );
+      throw Exception('Invalid JSON response: ${response.body}');
     }
 
     final data = decoded;
@@ -857,21 +819,13 @@ class ApiService {
     request.headers.addAll(authOnlyHeaders);
 
     request.fields['assignment_id'] = assignmentId.toString();
-
     request.fields['title'] = title.trim();
-
     request.fields['description'] = description?.trim() ?? '';
-
     request.fields['assigned_year'] = assignedYear.toString();
-
     request.fields['assigned_month'] = assignedMonth.toString();
-
     request.fields['assigned_day'] = assignedDay.toString();
-
     request.fields['due_year'] = dueYear.toString();
-
     request.fields['due_month'] = dueMonth.toString();
-
     request.fields['due_day'] = dueDay.toString();
 
     if (teacherMaterialBytes != null && teacherMaterialBytes.isNotEmpty) {
@@ -890,36 +844,16 @@ class ApiService {
     }
 
     debugPrint('========== HOMEWORK CREATE ==========');
-
     debugPrint('URL: ${request.url}');
-
-    debugPrint(
-      'FILE SELECTED: '
-      '${teacherMaterialBytes != null}',
-    );
+    debugPrint('FILE SELECTED: ${teacherMaterialBytes != null}');
 
     if (teacherMaterialBytes != null) {
-      debugPrint(
-        'FILE NAME: '
-        '$teacherMaterialFileName',
-      );
-
-      debugPrint(
-        'FILE SIZE: '
-        '${teacherMaterialBytes.length} bytes',
-      );
+      debugPrint('FILE NAME: $teacherMaterialFileName');
+      debugPrint('FILE SIZE: ${teacherMaterialBytes.length} bytes');
     }
 
-    debugPrint(
-      'REQUEST FIELD COUNT: '
-      '${request.fields.length}',
-    );
-
-    debugPrint(
-      'REQUEST FILE COUNT: '
-      '${request.files.length}',
-    );
-
+    debugPrint('REQUEST FIELD COUNT: ${request.fields.length}');
+    debugPrint('REQUEST FILE COUNT: ${request.files.length}');
     debugPrint('====================================');
 
     final streamedResponse = await request.send();
@@ -990,48 +924,25 @@ class ApiService {
     request.headers.addAll(authOnlyHeaders);
 
     request.fields['homework_id'] = homeworkId.toString();
-
     request.fields['title'] = title.trim();
-
     request.fields['description'] = description?.trim() ?? '';
-
     request.fields['due_year'] = dueYear.toString();
-
     request.fields['due_month'] = dueMonth.toString();
-
     request.fields['due_day'] = dueDay.toString();
 
     debugPrint('');
-
     debugPrint('========================================');
-
     debugPrint('========== HOMEWORK UPDATE API =========');
-
     debugPrint('========================================');
-
     debugPrint('URL: ${request.url}');
-
     debugPrint('HOMEWORK ID: $homeworkId');
-
     debugPrint('TITLE: ${request.fields['title']}');
-
-    debugPrint(
-      'DUE DATE: '
-      '$dueYear-$dueMonth-$dueDay',
-    );
+    debugPrint('DUE DATE: $dueYear-$dueMonth-$dueDay');
 
     if (teacherMaterialBytes != null && teacherMaterialBytes.isNotEmpty) {
       debugPrint('FILE SELECTED: YES');
-
-      debugPrint(
-        'FILE NAME: '
-        '$teacherMaterialFileName',
-      );
-
-      debugPrint(
-        'FILE SIZE: '
-        '${teacherMaterialBytes.length} bytes',
-      );
+      debugPrint('FILE NAME: $teacherMaterialFileName');
+      debugPrint('FILE SIZE: ${teacherMaterialBytes.length} bytes');
 
       if (teacherMaterialFileName == null ||
           teacherMaterialFileName.trim().isEmpty) {
@@ -1046,36 +957,16 @@ class ApiService {
         ),
       );
 
-      debugPrint(
-        'MULTIPART FILE NAME: '
-        '${request.files.first.filename}',
-      );
-
-      debugPrint(
-        'MULTIPART FIELD NAME: '
-        '${request.files.first.field}',
-      );
-
-      debugPrint(
-        'MULTIPART FILE LENGTH: '
-        '${request.files.first.length}',
-      );
+      debugPrint('MULTIPART FILE NAME: ${request.files.first.filename}');
+      debugPrint('MULTIPART FIELD NAME: ${request.files.first.field}');
+      debugPrint('MULTIPART FILE LENGTH: ${request.files.first.length}');
     } else {
       debugPrint('FILE SELECTED: NO');
-
       debugPrint('Existing material will be preserved.');
     }
 
-    debugPrint(
-      'REQUEST FIELD COUNT: '
-      '${request.fields.length}',
-    );
-
-    debugPrint(
-      'REQUEST FILE COUNT: '
-      '${request.files.length}',
-    );
-
+    debugPrint('REQUEST FIELD COUNT: ${request.fields.length}');
+    debugPrint('REQUEST FILE COUNT: ${request.files.length}');
     debugPrint('========================================');
 
     final streamedResponse = await request.send();
@@ -1083,23 +974,11 @@ class ApiService {
     final response = await http.Response.fromStream(streamedResponse);
 
     debugPrint('');
-
     debugPrint('========================================');
-
     debugPrint('========== PHP RESPONSE ================');
-
     debugPrint('========================================');
-
-    debugPrint(
-      'STATUS CODE: '
-      '${response.statusCode}',
-    );
-
-    debugPrint(
-      'RESPONSE BODY: '
-      '${response.body}',
-    );
-
+    debugPrint('STATUS CODE: ${response.statusCode}');
+    debugPrint('RESPONSE BODY: ${response.body}');
     debugPrint('========================================');
 
     final data = _decodeResponse(
@@ -1161,6 +1040,74 @@ class ApiService {
     }
 
     return data;
+  }
+
+  // ============================================================
+  // TEACHER HOMEWORK SUBMISSION DOWNLOAD
+  // ============================================================
+
+  static Future<List<int>> downloadTeacherHomeworkSubmission({
+    required int submissionId,
+  }) async {
+    if (submissionId <= 0) {
+      throw Exception('Submission ID is required.');
+    }
+
+    final uri = Uri.parse('$baseUrl/teacher/homework/download-submission.php')
+        .replace(queryParameters: {'id': submissionId.toString()});
+
+    debugPrint('');
+    debugPrint('========================================');
+    debugPrint('=== HOMEWORK SUBMISSION DOWNLOAD ======');
+    debugPrint('========================================');
+    debugPrint('SUBMISSION ID: $submissionId');
+    debugPrint('URL: $uri');
+    debugPrint('========================================');
+
+    final response = await http.get(uri, headers: authOnlyHeaders);
+
+    debugPrint('DOWNLOAD STATUS: ${response.statusCode}');
+    debugPrint('DOWNLOAD CONTENT TYPE: ${response.headers['content-type']}');
+    debugPrint('DOWNLOAD FILE SIZE: ${response.bodyBytes.length} bytes');
+    debugPrint('========================================');
+
+    if (response.statusCode != 200) {
+      String message = 'Failed to download submitted material.';
+
+      try {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is Map && decoded['message'] != null) {
+          message = decoded['message'].toString();
+        }
+      } catch (_) {}
+
+      throw Exception(message);
+    }
+
+    if (response.bodyBytes.isEmpty) {
+      throw Exception('The submitted material file is empty.');
+    }
+
+    final contentType = response.headers['content-type']?.toLowerCase() ?? '';
+
+    if (contentType.contains('application/json')) {
+      try {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is Map && decoded['message'] != null) {
+          throw Exception(decoded['message'].toString());
+        }
+      } catch (e) {
+        if (e is Exception) {
+          rethrow;
+        }
+      }
+
+      throw Exception('The submission download API did not return a file.');
+    }
+
+    return response.bodyBytes;
   }
 
   static Future<Map<String, dynamic>> updateTeacherHomeworkStatus({
@@ -1246,35 +1193,18 @@ class ApiService {
         .replace(queryParameters: {'roster_type': normalizedRosterType});
 
     debugPrint('');
-
     debugPrint('========================================');
-
     debugPrint('========== TEACHER ROSTER ==============');
-
     debugPrint('========================================');
-
-    debugPrint(
-      'ROSTER TYPE: '
-      '$normalizedRosterType',
-    );
-
+    debugPrint('ROSTER TYPE: $normalizedRosterType');
     debugPrint('URL: $uri');
-
     debugPrint('========================================');
 
     try {
       final response = await http.get(uri, headers: authHeaders);
 
-      debugPrint(
-        'STATUS: '
-        '${response.statusCode}',
-      );
-
-      debugPrint(
-        'BODY: '
-        '${response.body}',
-      );
-
+      debugPrint('STATUS: ${response.statusCode}');
+      debugPrint('BODY: ${response.body}');
       debugPrint('========================================');
 
       final data = _decodeResponse(
@@ -1289,7 +1219,6 @@ class ApiService {
       return data;
     } catch (e) {
       debugPrint('ROSTER ERROR: $e');
-
       rethrow;
     }
   }
@@ -1308,40 +1237,19 @@ class ApiService {
     );
 
     debugPrint('');
-
     debugPrint('========================================');
-
     debugPrint('====== TEACHER ROSTER EXPORT ===========');
-
     debugPrint('========================================');
-
-    debugPrint(
-      'ROSTER TYPE: '
-      '$normalizedRosterType',
-    );
-
+    debugPrint('ROSTER TYPE: $normalizedRosterType');
     debugPrint('URL: $uri');
-
     debugPrint('========================================');
 
     try {
       final response = await http.get(uri, headers: authOnlyHeaders);
 
-      debugPrint(
-        'STATUS: '
-        '${response.statusCode}',
-      );
-
-      debugPrint(
-        'CONTENT TYPE: '
-        '${response.headers['content-type']}',
-      );
-
-      debugPrint(
-        'FILE SIZE: '
-        '${response.bodyBytes.length} bytes',
-      );
-
+      debugPrint('STATUS: ${response.statusCode}');
+      debugPrint('CONTENT TYPE: ${response.headers['content-type']}');
+      debugPrint('FILE SIZE: ${response.bodyBytes.length} bytes');
       debugPrint('========================================');
 
       if (response.statusCode != 200) {
@@ -1386,9 +1294,370 @@ class ApiService {
       return response.bodyBytes;
     } catch (e) {
       debugPrint('ROSTER EXPORT ERROR: $e');
-
       rethrow;
     }
+  }
+
+  // ============================================================
+  // TEACHER MATERIALS - LIST AND FILTER
+  // ============================================================
+
+  static Future<Map<String, dynamic>> getTeacherMaterials({
+    int? grade,
+    String? section,
+    int? subjectId,
+    String? search,
+    int perPage = 10,
+    int page = 1,
+  }) async {
+    if (page < 1) {
+      page = 1;
+    }
+
+    if (![10, 20, 30, 50].contains(perPage)) {
+      perPage = 10;
+    }
+
+    final queryParameters = <String, String>{
+      'page': page.toString(),
+      'per_page': perPage.toString(),
+    };
+
+    if (grade != null && grade > 0) {
+      queryParameters['grade'] = grade.toString();
+    }
+
+    if (section != null && section.trim().isNotEmpty) {
+      queryParameters['section'] = section.trim().toUpperCase();
+    }
+
+    if (subjectId != null && subjectId > 0) {
+      queryParameters['subject'] = subjectId.toString();
+    }
+
+    if (search != null && search.trim().isNotEmpty) {
+      queryParameters['search'] = search.trim();
+    }
+
+    final uri = Uri.parse('$baseUrl/teacher/materials.php')
+        .replace(queryParameters: queryParameters);
+
+    debugPrint('');
+    debugPrint('========================================');
+    debugPrint('========= TEACHER MATERIALS ============');
+    debugPrint('========================================');
+    debugPrint('URL: $uri');
+    debugPrint('GRADE: $grade');
+    debugPrint('SECTION: $section');
+    debugPrint('SUBJECT ID: $subjectId');
+    debugPrint('SEARCH: $search');
+    debugPrint('PER PAGE: $perPage');
+    debugPrint('PAGE: $page');
+    debugPrint('========================================');
+
+    final response = await http.get(uri, headers: authHeaders);
+
+    debugPrint('MATERIALS STATUS: ${response.statusCode}');
+    debugPrint('MATERIALS RESPONSE: ${response.body}');
+    debugPrint('========================================');
+
+    final data = _decodeResponse(
+      response,
+      'The teacher materials API returned an invalid response.',
+    );
+
+    if (response.statusCode != 200 || data['success'] != true) {
+      throw Exception(data['message'] ?? 'Failed to load teacher materials.');
+    }
+
+    return data;
+  }
+
+  // ============================================================
+  // TEACHER MATERIALS - LOAD ALL PAGES
+  // ============================================================
+
+  static Future<Map<String, dynamic>> getAllTeacherMaterials({
+    int? grade,
+    String? section,
+    int? subjectId,
+    String? search,
+    int perPage = 50,
+  }) async {
+    final firstPage = await getTeacherMaterials(
+      grade: grade,
+      section: section,
+      subjectId: subjectId,
+      search: search,
+      perPage: perPage,
+      page: 1,
+    );
+
+    final pagination = firstPage['pagination'] as Map<String, dynamic>? ?? {};
+
+    final totalPages =
+        int.tryParse(pagination['total_pages']?.toString() ?? '1') ?? 1;
+
+    final allMaterials = <Map<String, dynamic>>[];
+
+    final firstMaterials = firstPage['materials'] as List<dynamic>? ?? [];
+
+    for (final material in firstMaterials) {
+      if (material is Map) {
+        allMaterials.add(Map<String, dynamic>.from(material));
+      }
+    }
+
+    for (int currentPage = 2; currentPage <= totalPages; currentPage++) {
+      final pageData = await getTeacherMaterials(
+        grade: grade,
+        section: section,
+        subjectId: subjectId,
+        search: search,
+        perPage: perPage,
+        page: currentPage,
+      );
+
+      final materials = pageData['materials'] as List<dynamic>? ?? [];
+
+      for (final material in materials) {
+        if (material is Map) {
+          allMaterials.add(Map<String, dynamic>.from(material));
+        }
+      }
+    }
+
+    return {
+      ...firstPage,
+      'materials': allMaterials,
+      'all_materials_loaded': true,
+    };
+  }
+  //material detail/view
+
+  static Future<Map<String, dynamic>> getTeacherMaterialDetails(
+    int materialId,
+  ) async {
+    final uri = Uri.parse('$baseUrl/teacher/material-view.php')
+        .replace(queryParameters: {'id': materialId.toString()});
+
+    final response = await http.get(uri, headers: authHeaders);
+
+    final data = jsonDecode(response.body);
+
+    if (data is! Map<String, dynamic>) {
+      throw Exception('Invalid response from server.');
+    }
+
+    if (response.statusCode == 200 && data['success'] == true) {
+      return data;
+    }
+
+    throw Exception(data['message'] ?? 'Failed to load material details.');
+  }
+
+  // ============================================================
+  // BUILD PROTECTED TEACHER MATERIAL FILE URL
+  // =
+  static Uri getTeacherMaterialFileUri({required int materialId}) {
+    if (materialId <= 0) {
+      throw Exception('Material ID is required.');
+    }
+
+    return Uri.parse('$baseUrl/teacher/material-file.php')
+        .replace(queryParameters: {'id': materialId.toString()});
+  }
+
+  static Future<Map<String, dynamic>> createTeacherMaterial({
+    required int assignmentId,
+    required String title,
+    String? description,
+    required List<int> fileBytes,
+    required String fileName,
+  }) async {
+    final currentToken = token;
+
+    if (currentToken == null || currentToken.isEmpty) {
+      throw Exception('Authentication token is missing.');
+    }
+
+    if (assignmentId <= 0) {
+      throw Exception('Please select a class and subject.');
+    }
+
+    if (title.trim().isEmpty) {
+      throw Exception('Please enter the material title.');
+    }
+
+    if (title.trim().length > 255) {
+      throw Exception('The material title must not exceed 255 characters.');
+    }
+
+    if (fileBytes.isEmpty) {
+      throw Exception('The selected file is empty or could not be read.');
+    }
+
+    if (fileName.trim().isEmpty) {
+      throw Exception('The selected file name is missing.');
+    }
+
+    if (fileBytes.length > 20 * 1024 * 1024) {
+      throw Exception('The file must not exceed 20 MB.');
+    }
+
+    final uri = Uri.parse('$baseUrl/teacher/material-create.php');
+
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers.addAll({
+      'Authorization': 'Bearer $currentToken',
+      'Accept': 'application/json',
+    });
+
+    request.fields['assignment_id'] = assignmentId.toString();
+    request.fields['title'] = title.trim();
+    request.fields['description'] = description?.trim() ?? '';
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'material_file',
+        fileBytes,
+        filename: fileName,
+      ),
+    );
+
+    debugPrint('');
+    debugPrint('========================================');
+    debugPrint('======= TEACHER MATERIAL UPLOAD ========');
+    debugPrint('========================================');
+    debugPrint('URL: ${request.url}');
+    debugPrint('ASSIGNMENT ID: $assignmentId');
+    debugPrint('TITLE: ${title.trim()}');
+    debugPrint('FILE NAME: $fileName');
+    debugPrint('FILE SIZE: ${fileBytes.length} bytes');
+    debugPrint('========================================');
+
+    final streamedResponse = await request.send();
+
+    final response = await http.Response.fromStream(streamedResponse);
+
+    debugPrint('UPLOAD STATUS: ${response.statusCode}');
+    debugPrint('UPLOAD RESPONSE: ${response.body}');
+    debugPrint('========================================');
+
+    final Map<String, dynamic> responseData;
+
+    try {
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException();
+      }
+
+      responseData = decoded;
+    } catch (_) {
+      throw Exception(
+        'The material upload API returned an invalid response '
+        '(HTTP ${response.statusCode}).',
+      );
+    }
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        responseData['success'] == true) {
+      return responseData;
+    }
+
+    throw Exception(
+      responseData['message'] ?? 'Failed to create learning material.',
+    );
+  }
+
+  static Future<Map<String, dynamic>> getTeacherMaterialAssignments() async {
+    final uri = Uri.parse('$baseUrl/teacher/material-assignments.php');
+
+    final response = await http.get(uri, headers: authHeaders);
+
+    final data = _decodeResponse(
+      response,
+      'The assignments API returned an invalid response.',
+    );
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        data['success'] == true) {
+      return data;
+    }
+
+    throw Exception(data['message'] ?? 'Failed to load subject assignments.');
+  }
+
+  static Future<Map<String, dynamic>> editTeacherMaterial({
+    required String token,
+    required int materialId,
+    required int assignmentId,
+    required String title,
+    String description = '',
+    Uint8List? fileBytes,
+    String? fileName,
+  }) async {
+    final uri = Uri.parse('$baseUrl/teacher/materail-edit.php');
+
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+
+    request.fields['material_id'] = materialId.toString();
+    request.fields['assignment_id'] = assignmentId.toString();
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+
+    if (fileBytes != null && fileName != null && fileName.isNotEmpty) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'material_file',
+          fileBytes,
+          filename: fileName,
+        ),
+      );
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        data['success'] == true) {
+      return data;
+    }
+
+    throw Exception(data['message'] ?? 'Failed to update material.');
+  }
+
+  static Future<Map<String, dynamic>> deleteTeacherMaterial({
+    required String token,
+    required int materialId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/teacher/delete-materail.php'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'material_id': materialId}),
+    );
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode == 200 && data['success'] == true) {
+      return data;
+    }
+
+    throw Exception(data['message'] ?? 'Failed to delete material.');
   }
 
   // ============================================================

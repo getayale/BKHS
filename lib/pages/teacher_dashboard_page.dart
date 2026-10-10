@@ -7,6 +7,7 @@ import '/pages/teacher/result_page.dart';
 import '/pages/teacher/homework/homework_page.dart';
 import '/pages/teacher/roster_screen.dart';
 import '/pages/teacher/teacher_profile_page.dart';
+import '/pages/teacher/material/material_page.dart';
 
 class TeacherDashboardPage extends StatefulWidget {
   const TeacherDashboardPage({super.key});
@@ -31,7 +32,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
     'Results',
     'Attendance',
     'Homework',
-    'Roster',
+    'More',
   ];
 
   @override
@@ -189,6 +190,146 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
     }
   }
 
+  void _showMoreMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: false,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD1D5DB),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'More',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Additional teacher tools',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _moreBottomItem(
+                  icon: Icons.fact_check_outlined,
+                  title: 'Roster',
+                  subtitle: 'View your assigned students',
+                  onTap: () {
+                    Navigator.of(context).pop();
+
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const RosterScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                _moreBottomItem(
+                  icon: Icons.folder_outlined,
+                  title: 'Material',
+                  subtitle: 'Manage your teaching materials',
+                  onTap: () {
+                    Navigator.of(context).pop();
+
+                    Navigator.of(this.context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const TeacherMaterialPage(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _moreBottomItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: const Color(0xFFF9FAFB),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: const Color(0xFF4F46E5), size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -273,6 +414,11 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
         child: BottomNavigationBar(
           currentIndex: selectedIndex,
           onTap: (index) {
+            if (index == 4) {
+              _showMoreMenu();
+              return;
+            }
+
             setState(() {
               selectedIndex = index;
             });
@@ -306,9 +452,9 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
               label: 'Homework',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.fact_check_outlined),
-              activeIcon: Icon(Icons.fact_check),
-              label: 'Roster',
+              icon: Icon(Icons.more_horiz_outlined),
+              activeIcon: Icon(Icons.more_horiz),
+              label: 'More',
             ),
           ],
         ),
@@ -326,9 +472,6 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
 
       case 3:
         return const HomeworkPage();
-
-      case 4:
-        return const RosterScreen();
 
       default:
         return _homePage();

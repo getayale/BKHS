@@ -1,4 +1,9 @@
+import 'dart:typed_data';
+
+import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:universal_html/html.dart' as html;
 
 import '/api_service.dart';
 
@@ -15,6 +20,8 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
   bool isLoading = true;
   bool isUpdating = false;
   bool isMarkingAllDone = false;
+
+  int? downloadingSubmissionId;
 
   String? errorMessage;
 
@@ -226,6 +233,223 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
     }
   }
 
+  Future<void> downloadSubmission(Map<String, dynamic> student) async {
+    if (downloadingSubmissionId != null) {
+      return;
+    }
+
+    final submissionId = int.tryParse('${student['submission_id'] ?? 0}') ?? 0;
+
+    if (submissionId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Submission file is not available.')),
+      );
+
+      return;
+    }
+
+    final originalFileName =
+        '${student['submission_original_name'] ?? 'submitted_material'}'.trim();
+
+    if (originalFileName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The submitted file name is missing.')),
+      );
+
+      return;
+    }
+
+    setState(() {
+      downloadingSubmissionId = submissionId;
+    });
+
+    try {
+      final List<int> fileBytes =
+          await ApiService.downloadTeacherHomeworkSubmission(
+            submissionId: submissionId,
+          );
+
+      if (fileBytes.isEmpty) {
+        throw Exception('The submitted material file is empty.');
+      }
+
+      String fileName = originalFileName;
+      String fileExtension = '';
+
+      final lastDotIndex = originalFileName.lastIndexOf('.');
+
+      if (lastDotIndex > 0 && lastDotIndex < originalFileName.length - 1) {
+        fileName = originalFileName.substring(0, lastDotIndex);
+
+        fileExtension = originalFileName
+            .substring(lastDotIndex + 1)
+            .trim()
+            .toLowerCase();
+      }
+
+      if (kIsWeb) {
+        await _downloadFileOnWeb(
+          fileBytes: fileBytes,
+          fileName: originalFileName,
+          fileExtension: fileExtension,
+        );
+      } else {
+        final mimeType = _getMimeType(fileExtension);
+
+        await FileSaver.instance.saveFile(
+          name: fileName,
+          bytes: Uint8List.fromList(fileBytes),
+          fileExtension: fileExtension,
+          includeExtension: fileExtension.isNotEmpty,
+          mimeType: mimeType,
+        );
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$originalFileName downloaded successfully.')),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          downloadingSubmissionId = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _downloadFileOnWeb({
+    required List<int> fileBytes,
+    required String fileName,
+    required String fileExtension,
+  }) async {
+    final mimeType = _getWebMimeType(fileExtension);
+
+    final blob = html.Blob([Uint8List.fromList(fileBytes)], mimeType);
+
+    final url = html.Url.createObjectUrlFromBlob(blob);
+
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute('download', fileName)
+      ..style.display = 'none';
+
+    html.document.body?.append(anchor);
+
+    anchor.click();
+
+    anchor.remove();
+
+    html.Url.revokeObjectUrl(url);
+  }
+
+  String _getWebMimeType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'pdf':
+        return 'application/pdf';
+
+      case 'ppt':
+        return 'application/vnd.ms-powerpoint';
+
+      case 'pptx':
+        return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+
+      case 'doc':
+        return 'application/msword';
+
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      case 'xls':
+        return 'application/vnd.ms-excel';
+
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      case 'csv':
+        return 'text/csv';
+
+      case 'txt':
+        return 'text/plain';
+
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+
+      case 'png':
+        return 'image/png';
+
+      case 'gif':
+        return 'image/gif';
+
+      case 'zip':
+        return 'application/zip';
+
+      case 'mp3':
+        return 'audio/mpeg';
+
+      case 'mp4':
+        return 'video/mp4';
+
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  MimeType _getMimeType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'pdf':
+        return MimeType.pdf;
+
+      case 'ppt':
+      case 'pptx':
+        return MimeType.microsoftPresentation;
+
+      case 'doc':
+      case 'docx':
+        return MimeType.microsoftWord;
+
+      case 'xls':
+      case 'xlsx':
+        return MimeType.microsoftExcel;
+
+      case 'csv':
+        return MimeType.csv;
+
+      case 'txt':
+        return MimeType.text;
+
+      case 'jpg':
+      case 'jpeg':
+        return MimeType.jpeg;
+
+      case 'png':
+        return MimeType.png;
+
+      case 'gif':
+        return MimeType.gif;
+
+      case 'zip':
+        return MimeType.zip;
+
+      case 'mp3':
+        return MimeType.mp3;
+
+      default:
+        return MimeType.other;
+    }
+  }
+
   String getValue(String key, {String fallback = '-'}) {
     final value = homework[key];
 
@@ -309,22 +533,6 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
                 ],
               ),
             ),
-      floatingActionButton: !isLoading && errorMessage == null
-          ? FloatingActionButton.extended(
-              onPressed: isMarkingAllDone ? null : markAllDone,
-              icon: isMarkingAllDone
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.done_all),
-              label: const Text('Mark All Done'),
-            )
-          : null,
     );
   }
 
@@ -563,6 +771,48 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
   }
 
   Widget _buildStudentsHeader() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    if (screenWidth < 500) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Students',
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                '$totalStudents students',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: isMarkingAllDone ? null : markAllDone,
+              icon: isMarkingAllDone
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.done_all, size: 18),
+              label: const Text('All Done'),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Row(
       children: [
         const Expanded(
@@ -574,6 +824,21 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
         Text(
           '$totalStudents students',
           style: TextStyle(color: Colors.grey.shade600),
+        ),
+        const SizedBox(width: 12),
+        FilledButton.icon(
+          onPressed: isMarkingAllDone ? null : markAllDone,
+          icon: isMarkingAllDone
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.done_all, size: 18),
+          label: const Text('All Done'),
         ),
       ],
     );
@@ -607,6 +872,92 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
 
     final paginatedStudents = students.sublist(startIndex, endIndex);
 
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final double horizontalMargin = screenWidth < 500
+        ? 4
+        : screenWidth < 800
+        ? 7
+        : 12;
+
+    final double columnSpacing = screenWidth < 500
+        ? 5
+        : screenWidth < 800
+        ? 10
+        : 20;
+
+    final double headingHeight = screenWidth < 500
+        ? 38
+        : screenWidth < 800
+        ? 44
+        : 48;
+
+    final double rowMinHeight = screenWidth < 500
+        ? 44
+        : screenWidth < 800
+        ? 50
+        : 58;
+
+    final double rowMaxHeight = screenWidth < 500
+        ? 56
+        : screenWidth < 800
+        ? 62
+        : 70;
+
+    final double headingFontSize = screenWidth < 500
+        ? 9
+        : screenWidth < 800
+        ? 10
+        : 13;
+
+    final double bodyFontSize = screenWidth < 500
+        ? 9
+        : screenWidth < 800
+        ? 10
+        : 13;
+
+    final double avatarRadius = screenWidth < 500
+        ? 11
+        : screenWidth < 800
+        ? 14
+        : 17;
+
+    final double avatarFontSize = screenWidth < 500
+        ? 8
+        : screenWidth < 800
+        ? 10
+        : 13;
+
+    final double iconSize = screenWidth < 500
+        ? 13
+        : screenWidth < 800
+        ? 15
+        : 18;
+
+    final double studentNameWidth = screenWidth < 500
+        ? 75
+        : screenWidth < 800
+        ? 120
+        : 180;
+
+    final double codeWidth = screenWidth < 500
+        ? 55
+        : screenWidth < 800
+        ? 80
+        : 120;
+
+    final double fileWidth = screenWidth < 500
+        ? 85
+        : screenWidth < 800
+        ? 140
+        : 240;
+
+    final double dateWidth = screenWidth < 500
+        ? 80
+        : screenWidth < 800
+        ? 120
+        : 180;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -614,152 +965,295 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
           elevation: 0,
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(screenWidth < 500 ? 10 : 14),
             side: BorderSide(color: Colors.grey.shade200),
           ),
           clipBehavior: Clip.antiAlias,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columnSpacing: 24,
-              headingRowHeight: 48,
-              dataRowMinHeight: 58,
-              dataRowMaxHeight: 70,
-              headingRowColor: WidgetStatePropertyAll(Colors.grey.shade50),
-              columns: const [
-                DataColumn(
-                  label: Text(
-                    'No.',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Student',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Code',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Homework',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Submission',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Submitted Date',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                DataColumn(
-                  label: Text(
-                    'Action',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-              rows: List.generate(paginatedStudents.length, (index) {
-                final student = paginatedStudents[index];
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: DataTable(
+                    horizontalMargin: horizontalMargin,
+                    columnSpacing: columnSpacing,
+                    headingRowHeight: headingHeight,
+                    dataRowMinHeight: rowMinHeight,
+                    dataRowMaxHeight: rowMaxHeight,
+                    headingRowColor: WidgetStatePropertyAll(
+                      Colors.grey.shade50,
+                    ),
+                    columns: [
+                      DataColumn(
+                        label: Text(
+                          'No.',
+                          style: TextStyle(
+                            fontSize: headingFontSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Student',
+                          style: TextStyle(
+                            fontSize: headingFontSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Code',
+                          style: TextStyle(
+                            fontSize: headingFontSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Status',
+                          style: TextStyle(
+                            fontSize: headingFontSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Submission',
+                          style: TextStyle(
+                            fontSize: headingFontSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Submitted File',
+                          style: TextStyle(
+                            fontSize: headingFontSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Submitted Date',
+                          style: TextStyle(
+                            fontSize: headingFontSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                    rows: List.generate(paginatedStudents.length, (index) {
+                      final student = paginatedStudents[index];
 
-                final studentId =
-                    int.tryParse(
-                      '${student['student_id'] ?? student['id'] ?? 0}',
-                    ) ??
-                    0;
+                      final studentId =
+                          int.tryParse(
+                            '${student['student_id'] ?? student['id'] ?? 0}',
+                          ) ??
+                          0;
 
-                final name =
-                    '${student['full_name'] ?? student['name'] ?? 'Unknown Student'}';
+                      final name =
+                          '${student['full_name'] ?? student['name'] ?? 'Unknown Student'}';
 
-                final code = '${student['student_code'] ?? '-'}';
+                      final code = '${student['student_code'] ?? '-'}';
 
-                final done = isStudentDone(student);
+                      final done = isStudentDone(student);
 
-                final submitted = isStudentSubmitted(student);
+                      final submitted = isStudentSubmitted(student);
 
-                final submittedAt = getStudentSubmittedDate(student);
+                      final submittedAt = getStudentSubmittedDate(student);
 
-                final rowNumber = startIndex + index + 1;
+                      final submittedFileName =
+                          '${student['submission_original_name'] ?? ''}'.trim();
 
-                return DataRow(
-                  cells: [
-                    DataCell(Text('$rowNumber')),
-                    DataCell(
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(
-                            radius: 17,
-                            child: Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : '?',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                      final submissionId =
+                          int.tryParse('${student['submission_id'] ?? 0}') ?? 0;
+
+                      final isDownloading =
+                          downloadingSubmissionId == submissionId &&
+                          submissionId > 0;
+
+                      final rowNumber = startIndex + index + 1;
+
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Text(
+                              '$rowNumber',
+                              style: TextStyle(fontSize: bodyFontSize),
+                            ),
+                          ),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: avatarRadius,
+                                  child: Text(
+                                    name.isNotEmpty
+                                        ? name[0].toUpperCase()
+                                        : '?',
+                                    style: TextStyle(
+                                      fontSize: avatarFontSize,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: screenWidth < 500 ? 3 : 8),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: studentNameWidth,
+                                  ),
+                                  child: Text(
+                                    name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: bodyFontSize,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          DataCell(
+                            ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: codeWidth),
+                              child: Text(
+                                code,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: bodyFontSize),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            name,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          DataCell(
+                            PopupMenuButton<String>(
+                              enabled: studentId > 0 && !isUpdating,
+                              onSelected: (value) {
+                                updateStudentStatus(studentId, value);
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'Done',
+                                  child: Text('Done'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'Not Done',
+                                  child: Text('Not Done'),
+                                ),
+                              ],
+                              child: _statusBadge(
+                                done ? 'Done' : 'Not Done',
+                                done,
+                                compact: screenWidth < 500,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  submitted
+                                      ? Icons.check_circle_outline
+                                      : Icons.schedule_outlined,
+                                  size: iconSize,
+                                ),
+                                SizedBox(width: screenWidth < 500 ? 2 : 5),
+                                Text(
+                                  submitted ? 'Submitted' : 'Not Submitted',
+                                  style: TextStyle(fontSize: bodyFontSize),
+                                ),
+                              ],
+                            ),
+                          ),
+                          DataCell(
+                            submitted &&
+                                    submissionId > 0 &&
+                                    submittedFileName.isNotEmpty
+                                ? InkWell(
+                                    onTap: downloadingSubmissionId != null
+                                        ? null
+                                        : () {
+                                            downloadSubmission(student);
+                                          },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.insert_drive_file_outlined,
+                                          size: iconSize,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                        SizedBox(
+                                          width: screenWidth < 500 ? 2 : 5,
+                                        ),
+                                        ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxWidth: fileWidth,
+                                          ),
+                                          child: Text(
+                                            submittedFileName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: bodyFontSize,
+                                              color: Colors.blue.shade700,
+                                              decoration:
+                                                  TextDecoration.underline,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isDownloading) ...[
+                                          SizedBox(
+                                            width: screenWidth < 500 ? 3 : 6,
+                                          ),
+                                          SizedBox(
+                                            width: screenWidth < 500 ? 11 : 15,
+                                            height: screenWidth < 500 ? 11 : 15,
+                                            child:
+                                                const CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  )
+                                : Text(
+                                    '-',
+                                    style: TextStyle(fontSize: bodyFontSize),
+                                  ),
+                          ),
+                          DataCell(
+                            ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: dateWidth),
+                              child: Text(
+                                submittedAt.isNotEmpty ? submittedAt : '-',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: bodyFontSize),
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                    ),
-                    DataCell(Text(code)),
-                    DataCell(_statusBadge(done ? 'Done' : 'Not Done', done)),
-                    DataCell(
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            submitted
-                                ? Icons.check_circle_outline
-                                : Icons.schedule_outlined,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(submitted ? 'Submitted' : 'Not Submitted'),
-                        ],
-                      ),
-                    ),
-                    DataCell(Text(submittedAt.isNotEmpty ? submittedAt : '-')),
-                    DataCell(
-                      PopupMenuButton<String>(
-                        enabled: studentId > 0 && !isUpdating,
-                        onSelected: (value) {
-                          updateStudentStatus(studentId, value);
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: 'Done',
-                            child: Text('Mark Done'),
-                          ),
-                          PopupMenuItem(
-                            value: 'Not Done',
-                            child: Text('Mark Not Done'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              }),
-            ),
+                      );
+                    }),
+                  ),
+                ),
+              );
+            },
           ),
         ),
-
         if (totalPages > 1) ...[
           const SizedBox(height: 12),
           Row(
@@ -800,20 +1294,34 @@ class _HomeworkViewPageState extends State<HomeworkViewPage> {
     );
   }
 
-  Widget _statusBadge(String text, bool isDone) {
+  Widget _statusBadge(String text, bool isDone, {bool compact = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 5 : 9,
+        vertical: compact ? 3 : 5,
+      ),
       decoration: BoxDecoration(
         color: isDone ? Colors.green.shade50 : Colors.orange.shade50,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: isDone ? Colors.green.shade700 : Colors.orange.shade700,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: compact ? 9 : 11,
+              fontWeight: FontWeight.w700,
+              color: isDone ? Colors.green.shade700 : Colors.orange.shade700,
+            ),
+          ),
+          SizedBox(width: compact ? 2 : 4),
+          Icon(
+            Icons.arrow_drop_down,
+            size: compact ? 13 : 16,
+            color: isDone ? Colors.green.shade700 : Colors.orange.shade700,
+          ),
+        ],
       ),
     );
   }

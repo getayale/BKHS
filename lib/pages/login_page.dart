@@ -3,12 +3,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../student_api.dart';
+
 import '/api_service.dart';
+
 import 'teacher_dashboard_page.dart';
 import 'parent/dashboard.dart';
+import 'student/dashboard.dart';
 
 // Import your other role dashboards here when ready:
-// import 'student_dashboard_page.dart';
 // import 'admin_dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -166,9 +169,13 @@ class _LoginPageState extends State<LoginPage> {
             break;
 
           case 'student':
-            _showSnackBar(
-              'Student portal is coming soon!',
-              const Color(0xFF3B82F6),
+            StudentApi.setToken(token);
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const StudentDashboardPage(),
+              ),
             );
             break;
 
