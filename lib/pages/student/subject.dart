@@ -1,8 +1,9 @@
-import 'dart:ui_web' as ui_web;
-
 import 'package:flutter/material.dart';
 
-import 'package:universal_html/html.dart' as html;
+import 'student_pdf_viewer_stub.dart'
+    if (dart.library.html) 'student_pdf_viewer_web.dart'
+    if (dart.library.io) 'student_pdf_viewer_mobile.dart'
+    as pdf_viewer;
 
 import '../../student_api.dart';
 
@@ -78,7 +79,7 @@ class _StudentSubjectsPageState extends State<StudentSubjectsPage> {
       return;
     }
 
-    final bookUrl = 'http://localhost/BKHS/$bookPdf';
+    final bookUrl = 'http://10.40.32.233/BKHS/$bookPdf';
 
     Navigator.push(
       context,
@@ -585,34 +586,6 @@ class StudentPdfPage extends StatefulWidget {
 }
 
 class _StudentPdfPageState extends State<StudentPdfPage> {
-  late final String viewType;
-
-  @override
-  void initState() {
-    super.initState();
-
-    viewType = 'student-pdf-${DateTime.now().microsecondsSinceEpoch}';
-
-    final pdfUrl = '${widget.pdfUrl}#zoom=page-width';
-
-    final iframe = html.IFrameElement()
-      ..src = pdfUrl
-      ..style.border = 'none'
-      ..style.width = '100%'
-      ..style.height = '100%'
-      ..style.margin = '0'
-      ..style.padding = '0'
-      ..style.display = 'block'
-      ..style.backgroundColor = '#ffffff'
-      ..style.overflow = 'auto'
-      ..setAttribute('allowfullscreen', 'true');
-
-    ui_web.platformViewRegistry.registerViewFactory(
-      viewType,
-      (int viewId) => iframe,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -640,7 +613,9 @@ class _StudentPdfPageState extends State<StudentPdfPage> {
         ),
       ),
       body: SafeArea(
-        child: SizedBox.expand(child: HtmlElementView(viewType: viewType)),
+        child: SizedBox.expand(
+          child: pdf_viewer.StudentPdfViewer(pdfUrl: widget.pdfUrl),
+        ),
       ),
     );
   }

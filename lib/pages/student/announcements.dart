@@ -1,7 +1,10 @@
-import 'dart:ui_web' as ui_web;
-
 import 'package:flutter/material.dart';
 import 'package:universal_html/html.dart' as html;
+
+import 'announcement_pdf_viewer_stub.dart'
+    if (dart.library.html) 'announcement_pdf_viewer_web.dart'
+    if (dart.library.io) 'announcement_pdf_viewer_mobile.dart'
+    as pdf_viewer;
 
 import '../../student_api.dart';
 
@@ -860,37 +863,6 @@ class _AnnouncementMediaViewer extends StatefulWidget {
 }
 
 class _AnnouncementMediaViewerState extends State<_AnnouncementMediaViewer> {
-  late final String _viewId;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _viewId = 'announcement-viewer-${DateTime.now().microsecondsSinceEpoch}';
-
-    final lowerMime = widget.mimeType.toLowerCase();
-
-    final isPdf =
-        lowerMime.contains('pdf') ||
-        widget.url.toLowerCase().split('?').first.endsWith('.pdf');
-
-    ui_web.platformViewRegistry.registerViewFactory(_viewId, (int viewId) {
-      final iframe = html.IFrameElement();
-
-      iframe.src = isPdf ? '${widget.url}#zoom=page-width' : widget.url;
-
-      iframe.style.border = 'none';
-
-      iframe.style.width = '100%';
-
-      iframe.style.height = '100%';
-
-      iframe.setAttribute('allowfullscreen', 'true');
-
-      return iframe;
-    });
-  }
-
   bool get _isPdf {
     final lowerMime = widget.mimeType.toLowerCase();
 
@@ -970,7 +942,7 @@ class _AnnouncementMediaViewerState extends State<_AnnouncementMediaViewer> {
                         ),
                       )
                     : _isPdf
-                    ? HtmlElementView(viewType: _viewId)
+                    ? pdf_viewer.AnnouncementPdfViewer(url: widget.url)
                     : const Center(
                         child: Text(
                           'This file cannot be previewed here.',

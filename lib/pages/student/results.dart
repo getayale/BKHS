@@ -405,7 +405,7 @@ class _StudentResultsPageState extends State<StudentResultsPage> {
                     width: 45,
                     child: Center(
                       child: Text(
-                        '#',
+                        'No',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

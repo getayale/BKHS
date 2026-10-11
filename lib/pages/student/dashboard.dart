@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../main.dart' show HomePage;
 import '../../student_api.dart';
 import 'subject.dart';
 import 'materials.dart';
@@ -109,16 +110,12 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 const Text(
                   'More',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 15),
-
                 _buildMoreItem(
                   icon: Icons.menu_book_outlined,
                   title: 'My Subjects',
@@ -133,7 +130,6 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                     );
                   },
                 ),
-
                 _buildMoreItem(
                   icon: Icons.folder_open_outlined,
                   title: 'Materials',
@@ -148,7 +144,6 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                     );
                   },
                 ),
-
                 _buildMoreItem(
                   icon: Icons.campaign_outlined,
                   title: 'Announcements',
@@ -205,10 +200,60 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
   // LOGOUT
   // ============================================================
 
-  void _logout() {
+  Future<void> _logout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.logout_rounded, color: Colors.red),
+              SizedBox(width: 10),
+              Text('Log out?'),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to log out of your student account?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Log out'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true || !mounted) {
+      return;
+    }
+
     StudentApi.clearToken();
 
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const HomePage()),
+      (route) => false,
+    );
   }
 
   // ============================================================
@@ -308,24 +353,18 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
         child: Column(
           children: [
             Icon(Icons.error_outline, size: 60, color: Colors.red.shade400),
-
             const SizedBox(height: 16),
-
             const Text(
               'Unable to load dashboard',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               errorMessage ?? 'Something went wrong.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade600),
             ),
-
             const SizedBox(height: 20),
-
             ElevatedButton.icon(
               onPressed: loadDashboard,
               icon: const Icon(Icons.refresh),
@@ -411,9 +450,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                   ),
                 ),
               ),
-
               const SizedBox(width: 15),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,9 +459,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                       'Welcome back,',
                       style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
-
                     const SizedBox(height: 3),
-
                     Text(
                       studentName,
                       maxLines: 2,
@@ -435,10 +470,8 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     if (studentCode.isNotEmpty) ...[
                       const SizedBox(height: 5),
-
                       Text(
                         'Student Code: $studentCode',
                         style: const TextStyle(
@@ -479,19 +512,16 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
               title: 'Grade',
               value: gradeLabel,
             ),
-
             _buildInfoCard(
               icon: Icons.groups_outlined,
               title: 'Section',
               value: section.isNotEmpty ? section : 'Not assigned',
             ),
-
             _buildInfoCard(
               icon: Icons.calendar_today_outlined,
               title: 'Academic Year',
               value: academicYear.isNotEmpty ? academicYear : 'Not available',
             ),
-
             _buildInfoCard(
               icon: Icons.badge_outlined,
               title: 'Student Code',
@@ -525,19 +555,16 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
               title: 'Subjects',
               value: subjectCount,
             ),
-
             _buildStatisticCard(
               icon: Icons.folder_outlined,
               title: 'Materials',
               value: materialCount,
             ),
-
             _buildStatisticCard(
               icon: Icons.assignment_outlined,
               title: 'Homework',
               value: homeworkCount,
             ),
-
             _buildStatisticCard(
               icon: Icons.bar_chart_outlined,
               title: 'Results',
@@ -576,9 +603,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
             ),
             child: Icon(icon, color: Colors.blue.shade700, size: 22),
           ),
-
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -590,9 +615,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
-
                 const SizedBox(height: 3),
-
                 Text(
                   value,
                   maxLines: 2,
@@ -637,9 +660,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
             ),
             child: Icon(icon, color: Colors.blue.shade700, size: 24),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -651,9 +672,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
-
                 const SizedBox(height: 3),
-
                 Text(
                   '$value',
                   style: const TextStyle(
@@ -725,13 +744,11 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
             tooltip: 'Profile',
             icon: const Icon(Icons.person_outline),
           ),
-
           IconButton(
             onPressed: _logout,
             tooltip: 'Logout',
             icon: const Icon(Icons.logout_outlined),
           ),
-
           const SizedBox(width: 6),
         ],
       ),
@@ -755,25 +772,21 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
             selectedIcon: Icon(Icons.home),
             label: 'Home',
           ),
-
           NavigationDestination(
             icon: Icon(Icons.assignment_outlined),
             selectedIcon: Icon(Icons.assignment),
             label: 'Homework',
           ),
-
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart),
             label: 'Results',
           ),
-
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Attendance',
           ),
-
           NavigationDestination(
             icon: Icon(Icons.more_horiz),
             selectedIcon: Icon(Icons.more_horiz),

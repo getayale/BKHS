@@ -1,7 +1,12 @@
-import 'dart:ui_web' as ui_web;
-
 import 'package:flutter/material.dart';
-import 'package:universal_html/html.dart' as html;
+
+import '../../student_api.dart';
+import 'subject.dart';
+
+import 'student_material_platform_viewer_stub.dart'
+    if (dart.library.html) 'student_material_platform_viewer_web.dart'
+    if (dart.library.io) 'student_material_platform_viewer_mobile.dart'
+    as platform_viewer;
 
 import '../../student_api.dart';
 import 'subject.dart';
@@ -163,7 +168,7 @@ class _StudentMaterialsPageState extends State<StudentMaterialsPage> {
         .replaceAll('\\', '/')
         .replaceFirst(RegExp(r'^/+'), '');
 
-    return 'http://localhost/BKHS/$normalizedPath';
+    return 'http://10.40.32.233/BKHS/$normalizedPath';
   }
 
   void _openMaterial(Map<String, dynamic> material) {
@@ -709,6 +714,12 @@ class _StudentMaterialsPageState extends State<StudentMaterialsPage> {
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| Student Material Viewer
+|--------------------------------------------------------------------------
+*/
+
 class StudentMaterialViewer extends StatefulWidget {
   final String title;
 
@@ -731,21 +742,6 @@ class StudentMaterialViewer extends StatefulWidget {
 }
 
 class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
-  late final String viewType;
-
-  late final String viewerUrl;
-
-  @override
-  void initState() {
-    super.initState();
-
-    viewType = 'student-material-${DateTime.now().microsecondsSinceEpoch}';
-
-    viewerUrl = _buildViewerUrl();
-
-    _registerViewer();
-  }
-
   String _getExtension() {
     final name = widget.fileName.toLowerCase();
 
@@ -761,7 +757,9 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
 
     final type = widget.fileType.toLowerCase();
 
-    return extension == 'pdf' || type.contains('pdf');
+    return extension == 'pdf' ||
+        type.contains('pdf') ||
+        widget.fileUrl.toLowerCase().split('?').first.endsWith('.pdf');
   }
 
   bool _isWord() {
@@ -779,7 +777,8 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
 
     return extension == 'ppt' ||
         extension == 'pptx' ||
-        type.contains('presentation');
+        type.contains('presentation') ||
+        type.contains('powerpoint');
   }
 
   bool _isImage() {
@@ -793,35 +792,6 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
         extension == 'gif' ||
         extension == 'webp' ||
         type.contains('image');
-  }
-
-  String _buildViewerUrl() {
-    if (_isWord() || _isPowerPoint()) {
-      return 'https://view.officeapps.live.com/op/view.aspx?src=${Uri.encodeComponent(widget.fileUrl)}';
-    }
-
-    if (_isPdf()) {
-      return '${widget.fileUrl}#zoom=page-width';
-    }
-
-    return widget.fileUrl;
-  }
-
-  void _registerViewer() {
-    ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
-      final iframe = html.IFrameElement()
-        ..src = viewerUrl
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..style.margin = '0'
-        ..style.padding = '0'
-        ..style.display = 'block'
-        ..style.backgroundColor = '#ffffff'
-        ..setAttribute('allowfullscreen', 'true');
-
-      return iframe;
-    });
   }
 
   String _getViewerDescription() {
@@ -846,7 +816,13 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
 
   Widget _buildViewer() {
     if (_isPdf() || _isWord() || _isPowerPoint()) {
-      return SizedBox.expand(child: HtmlElementView(viewType: viewType));
+      return SizedBox.expand(
+        child: platform_viewer.StudentMaterialPlatformViewer(
+          url: widget.fileUrl,
+          fileName: widget.fileName,
+          fileType: widget.fileType,
+        ),
+      );
     }
 
     if (_isImage()) {
@@ -880,17 +856,13 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.error_outline, size: 52, color: Colors.red.shade300),
-
             const SizedBox(height: 14),
-
             const Text(
               'Unable to open this material.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'Please check the file and try again.',
               textAlign: TextAlign.center,
@@ -914,16 +886,12 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
               size: 58,
               color: Colors.grey.shade400,
             ),
-
             const SizedBox(height: 14),
-
             const Text(
               'Preview is not available',
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'This file type cannot be previewed inside the app.',
               textAlign: TextAlign.center,
@@ -1007,9 +975,7 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-
                       const SizedBox(width: 12),
-
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1025,9 +991,7 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-
                             const SizedBox(height: 2),
-
                             Text(
                               _getViewerDescription(),
                               maxLines: 1,
@@ -1040,7 +1004,6 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
                           ],
                         ),
                       ),
-
                       IconButton(
                         tooltip: 'Close',
                         onPressed: () {
@@ -1051,7 +1014,6 @@ class _StudentMaterialViewerState extends State<StudentMaterialViewer> {
                     ],
                   ),
                 ),
-
                 Expanded(
                   child: ColoredBox(
                     color: const Color(0xFFF8FAFC),

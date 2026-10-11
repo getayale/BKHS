@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../main.dart' show HomePage;
 import '/api_service.dart';
 import '/parent_apiservice.dart';
 import '/pages/parent/child_details.dart';
@@ -30,7 +31,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
   void initState() {
     super.initState();
 
-    _apiService = ParentApiService(baseUrl: 'http://localhost/BKHS/api');
+    _apiService = ParentApiService(baseUrl: 'http://10.40.32.233/BKHS/api');
 
     _loadDashboard();
   }
@@ -78,7 +79,6 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
 
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
-
         _isLoading = false;
       });
     }
@@ -124,42 +124,53 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
     return '';
   }
 
+  // ============================================================
+  // LOGOUT
+  // ============================================================
+
   Future<void> _logout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Logout',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          content: const Text('Are you sure you want to logout?'),
+          title: const Row(
+            children: [
+              Icon(Icons.logout_rounded, color: Colors.red),
+              SizedBox(width: 10),
+              Text('Log out?'),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to log out of your parent account?',
+          ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context, false);
+                Navigator.pop(dialogContext, false);
               },
               child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () {
-                Navigator.pop(context, true);
+                Navigator.pop(dialogContext, true);
               },
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
               ),
-              child: const Text('Logout'),
+              child: const Text('Log out'),
             ),
           ],
         );
       },
     );
 
-    if (shouldLogout != true) {
+    if (shouldLogout != true || !mounted) {
       return;
     }
-
-    if (!mounted) return;
 
     try {
       await ApiService.logout();
@@ -168,7 +179,9 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(
+            'Logout failed: ${e.toString().replaceFirst('Exception: ', '')}',
+          ),
           backgroundColor: const Color(0xFFDC2626),
         ),
       );
@@ -178,8 +191,15 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
 
     if (!mounted) return;
 
-    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const HomePage()),
+      (route) => false,
+    );
   }
+
+  // ============================================================
+  // PROFILE
+  // ============================================================
 
   void _openProfile() {
     setState(() {
@@ -197,11 +217,8 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-
       appBar: _buildAppBar(),
-
       body: _buildSelectedPage(),
-
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
@@ -211,9 +228,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
       backgroundColor: Colors.white,
       elevation: 0,
       surfaceTintColor: Colors.white,
-
       titleSpacing: 20,
-
       title: Text(
         _getPageTitle(),
         style: const TextStyle(
@@ -222,7 +237,6 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
           fontWeight: FontWeight.w700,
         ),
       ),
-
       actions: [
         GestureDetector(
           onTap: _openProfile,
@@ -231,7 +245,6 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
             child: _buildProfileAvatar(),
           ),
         ),
-
         IconButton(
           onPressed: _logout,
           tooltip: 'Logout',
@@ -241,7 +254,6 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
             size: 22,
           ),
         ),
-
         const SizedBox(width: 8),
       ],
     );
@@ -251,19 +263,14 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
     switch (_selectedIndex) {
       case 0:
         return 'Parent Dashboard';
-
       case 1:
         return 'My Children';
-
       case 2:
         return 'Homework';
-
       case 3:
         return 'Announcements';
-
       case 4:
         return 'Profile';
-
       default:
         return 'Parent Portal';
     }
@@ -273,31 +280,26 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
     switch (_selectedIndex) {
       case 0:
         return _buildDashboard();
-
       case 1:
         return _buildComingSoonPage(
           icon: Icons.people_outline_rounded,
           title: 'My Children',
           message: 'Your children details will appear here.',
         );
-
       case 2:
         return _buildComingSoonPage(
           icon: Icons.assignment_outlined,
           title: 'Homework',
           message: 'Your children homework will appear here.',
         );
-
       case 3:
         return _buildComingSoonPage(
           icon: Icons.campaign_outlined,
           title: 'Announcements',
           message: 'School announcements will appear here.',
         );
-
       case 4:
         return ParentProfilePage(token: widget.token);
-
       default:
         return _buildDashboard();
     }
@@ -321,13 +323,9 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
         children: [
           _buildWelcomeSection(),
-
           const SizedBox(height: 28),
-
           _buildChildrenHeader(),
-
           const SizedBox(height: 15),
-
           if (_children.isEmpty)
             _buildNoChildrenCard()
           else
@@ -350,9 +348,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-
         const SizedBox(height: 7),
-
         const Text(
           "Here's an overview of your children's "
           'school information.',
@@ -376,9 +372,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
             ),
           ),
         ),
-
         const SizedBox(width: 12),
-
         Flexible(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
@@ -429,16 +423,11 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
-
       padding: const EdgeInsets.all(20),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         border: Border.all(color: const Color(0xFFE5E7EB)),
-
         borderRadius: BorderRadius.circular(12),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -447,24 +436,19 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
           ),
         ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-
             children: [
               Container(
                 width: 52,
                 height: 52,
-
                 decoration: const BoxDecoration(
                   color: Color(0xFFEFF6FF),
                   shape: BoxShape.circle,
                 ),
-
                 child: Center(
                   child: Text(
                     firstLetter,
@@ -476,13 +460,10 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                   ),
                 ),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     Text(
                       childName,
@@ -494,9 +475,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
                     Text(
                       studentCode,
                       maxLines: 1,
@@ -511,13 +490,9 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
           const Divider(height: 1, color: Color(0xFFEEF0F3)),
-
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
@@ -526,9 +501,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                   gradeNumber != null ? 'Grade $gradeNumber' : 'N/A',
                 ),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: _buildDetail(
                   'Section',
@@ -537,27 +510,19 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
           Row(
             children: [
               Expanded(
                 child: _buildDetail('Academic Year', _getAcademicYear()),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(child: _buildDetail('Relationship', relationship)),
             ],
           ),
-
           const SizedBox(height: 18),
-
           const Divider(height: 1, color: Color(0xFFEEF0F3)),
-
           const SizedBox(height: 16),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -566,35 +531,26 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                       _viewChild(child);
                     }
                   : null,
-
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
-
                 foregroundColor: Colors.white,
-
                 elevation: 0,
-
                 padding: const EdgeInsets.symmetric(
                   vertical: 12,
                   horizontal: 14,
                 ),
-
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-
                 children: [
                   Text(
                     'View Child',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
-
                   SizedBox(width: 7),
-
                   Icon(Icons.arrow_forward_rounded, size: 17),
                 ],
               ),
@@ -620,9 +576,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
             letterSpacing: 0.3,
           ),
         ),
-
         const SizedBox(height: 5),
-
         Text(
           value,
           maxLines: 2,
@@ -644,7 +598,6 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid student information.')),
       );
-
       return;
     }
 
@@ -656,35 +609,27 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
   Widget _buildNoChildrenCard() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 55),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         border: Border.all(color: const Color(0xFFE5E7EB)),
-
         borderRadius: BorderRadius.circular(12),
       ),
-
       child: Column(
         children: [
           Container(
             width: 58,
             height: 58,
-
             decoration: const BoxDecoration(
               color: Color(0xFFF3F4F6),
               shape: BoxShape.circle,
             ),
-
             child: const Icon(
               Icons.people_outline_rounded,
               color: Color(0xFF6B7280),
               size: 25,
             ),
           ),
-
           const SizedBox(height: 15),
-
           const Text(
             'No children found',
             style: TextStyle(
@@ -693,9 +638,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 7),
-
           const Text(
             'No children with active account access '
             'were found for the current academic year.',
@@ -715,29 +658,23 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-
         child: Column(
           mainAxisSize: MainAxisSize.min,
-
           children: [
             Container(
               width: 64,
               height: 64,
-
               decoration: BoxDecoration(
                 color: const Color(0xFFFEF2F2),
                 borderRadius: BorderRadius.circular(20),
               ),
-
               child: const Icon(
                 Icons.cloud_off_outlined,
                 color: Color(0xFFEF4444),
                 size: 32,
               ),
             ),
-
             const SizedBox(height: 16),
-
             const Text(
               'Unable to load dashboard',
               textAlign: TextAlign.center,
@@ -747,9 +684,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               _errorMessage ?? 'Something went wrong.',
               textAlign: TextAlign.center,
@@ -759,16 +694,11 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                 height: 1.4,
               ),
             ),
-
             const SizedBox(height: 20),
-
             ElevatedButton.icon(
               onPressed: _loadDashboard,
-
               icon: const Icon(Icons.refresh_rounded),
-
               label: const Text('Try Again'),
-
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
@@ -796,19 +726,13 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
         child: Container(
           width: 38,
           height: 38,
-
           color: const Color(0xFFEFF6FF),
-
           child: Image.network(
             photoUrl,
-
             width: 38,
             height: 38,
-
             fit: BoxFit.cover,
-
             webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-
             errorBuilder: (context, error, stackTrace) {
               return const Icon(
                 Icons.person_outline_rounded,
@@ -823,9 +747,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
 
     return const CircleAvatar(
       radius: 19,
-
       backgroundColor: Color(0xFFEFF6FF),
-
       child: Icon(
         Icons.person_outline_rounded,
         color: Color(0xFF2563EB),
@@ -842,25 +764,19 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-
         child: Column(
           mainAxisSize: MainAxisSize.min,
-
           children: [
             Container(
               width: 70,
               height: 70,
-
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(22),
               ),
-
               child: Icon(icon, color: const Color(0xFF2563EB), size: 34),
             ),
-
             const SizedBox(height: 18),
-
             Text(
               title,
               style: const TextStyle(
@@ -869,9 +785,7 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               message,
               textAlign: TextAlign.center,
@@ -890,44 +804,33 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
   Widget _buildBottomNavigationBar() {
     return NavigationBar(
       selectedIndex: _selectedIndex,
-
       onDestinationSelected: _onNavigationTap,
-
       backgroundColor: Colors.white,
-
       surfaceTintColor: Colors.white,
-
       elevation: 8,
-
       indicatorColor: const Color(0xFFEFF6FF),
-
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
           selectedIcon: Icon(Icons.home_rounded),
           label: 'Dashboard',
         ),
-
         NavigationDestination(
           icon: Icon(Icons.people_outline_rounded),
           selectedIcon: Icon(Icons.people_rounded),
           label: 'Children',
         ),
-
         NavigationDestination(
           icon: Icon(Icons.assignment_outlined),
           selectedIcon: Icon(Icons.assignment_rounded),
           label: 'Homework',
         ),
-
         NavigationDestination(
           icon: Icon(Icons.campaign_outlined),
           selectedIcon: Icon(Icons.campaign_rounded),
           label: 'News',
         ),
-
         NavigationDestination(
           icon: Icon(Icons.person_outline_rounded),
           selectedIcon: Icon(Icons.person_rounded),
